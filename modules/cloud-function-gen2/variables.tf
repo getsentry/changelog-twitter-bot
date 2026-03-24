@@ -26,8 +26,8 @@ variable "description" {
 
 variable "runtime" {
   type        = string
-  description = "Function runtime, default python 3.9"
-  default     = "python39"
+  description = "Function runtime, default python 3.11"
+  default     = "python311"
 }
 
 variable "source_object_prefix" {
