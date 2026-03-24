@@ -12,6 +12,5 @@ locals {
     "sentrychangelog_twitter_consumer_secret",
     "sentrychangelog_twitter_access_token",
     "sentrychangelog_twitter_access_token_secret",
-    "sentrychangelog_webhook_auth_header",
   ]
 }
