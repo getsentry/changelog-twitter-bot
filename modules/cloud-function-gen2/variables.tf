@@ -1,6 +1,10 @@
+############################
+# Cloud Function variables #
+############################
+
 variable "name" {
   type        = string
-  description = "Name of the cloud function"
+  description = "Name of the cloud function (also used for the cron job if enabled)"
 }
 
 variable "source_dir" {
@@ -16,7 +20,7 @@ variable "location" {
 
 variable "description" {
   type        = string
-  description = "Description for the cloud function"
+  description = "Description for the cloud function and cron job"
   default     = null
 }
 
@@ -96,11 +100,10 @@ variable "ingress_settings" {
   description = "Available ingress settings. ALLOW_ALL, ALLOW_INTERNAL_ONLY, ALLOW_INTERNAL_AND_GCLB."
   type        = string
   default     = "ALLOW_ALL"
-
 }
 
 variable "files_to_exclude" {
-  description = "files to exclude from the "
+  description = "files to exclude from the source archive"
   type        = list(string)
   default = [
     "terragrunt.hcl",
@@ -115,4 +118,38 @@ variable "files_to_exclude" {
     ".terragrunt-source-manifest",
     ".terragrunt-source-version",
   ]
+}
+
+variable "owner" {
+  type        = string
+  description = "The owner of the project, used for tagging resources and future ownership tracking"
+  default     = null
+}
+
+########################
+# Cron Job variables   #
+########################
+
+variable "schedule" {
+  type        = string
+  description = "Cron schedule expression (* * * * *). Set to enable the Cloud Scheduler cron job."
+  default     = null
+}
+
+variable "time_zone" {
+  type        = string
+  description = "Time zone for schedule, default Etc/UTC"
+  default     = "Etc/UTC"
+}
+
+variable "http_method" {
+  type        = string
+  description = "HTTP method for the cron job call, default GET"
+  default     = "GET"
+}
+
+variable "attempt_deadline" {
+  type        = string
+  description = "Deadline for the function to return before job fail, max 1800s or 30m"
+  default     = "320s"
 }
