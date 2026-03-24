@@ -1,12 +1,17 @@
 import os
 import logging
+from datetime import datetime, timedelta, timezone
+
+import feedparser
 from requests_oauthlib import OAuth1Session
 import sentry_sdk
 from sentry_sdk.integrations.gcp import GcpIntegration
 
+sentry_dsn = os.environ.get("SENTRY_DSN")
+
 sentry_sdk.init(
     # changelog-twitter-poster project in sentry
-    dsn="https://a3d3dee85cf224e789c6df4a6c50d1ed@o1.ingest.us.sentry.io/4508258405908480",
+    dsn=sentry_dsn,
     integrations=[
         GcpIntegration(timeout_warning=True),
     ],
@@ -27,9 +32,7 @@ sentrychangelog_twitter_access_token = os.environ.get(
 sentrychangelog_twitter_access_token_secret = os.environ.get(
     "sentrychangelog_twitter_access_token_secret"
 )
-sentrychangelog_webhook_auth_header = os.environ.get(
-    "sentrychangelog_webhook_auth_header"
-)
+rss_feed_url = os.environ.get("RSS_FEED_URL")
 
 
 # make sure the request has all the required fields, and draft the twitter post content
@@ -79,22 +82,51 @@ def post_to_twitter(payload):
     return "Success", 200
 
 
+def fetch_rss_updates(feed_url):
+    """Fetch an RSS feed and return entries published within the past hour."""
+    feed = feedparser.parse(feed_url)
+
+    if feed.bozo:
+        logging.error("RSS fetch failed for %s: %s", feed_url, feed.bozo_exception)
+        return []
+
+    one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+    recent_entries = []
+
+    for entry in feed.entries:
+        published = entry.get("published_parsed") or entry.get("updated_parsed")
+        if not published:
+            continue
+
+        entry_time = datetime(*published[:6], tzinfo=timezone.utc)
+        if entry_time >= one_hour_ago:
+            recent_entries.append(
+                {
+                    "title": entry.get("title", ""),
+                    "description": entry.get("summary", ""),
+                    "link": entry.get("link", ""),
+                    "published": entry_time,
+                }
+            )
+
+    logging.info(
+        "RSS feed %s: found %d entries in the past hour", feed_url, len(recent_entries)
+    )
+    return recent_entries
+
+
 def main(request):
 
-    # make sure the request is coming from Zapier
-    if request.headers.get("User-Agent") != "Zapier":
-        return "Unauthorized", 401
-    # verifiy the authorization header
-    elif request.headers.get("Authorization") != sentrychangelog_webhook_auth_header:
-        return "Unauthorized", 401
+    # fetch the latest RSS updates
+    feed_updates = fetch_rss_updates(rss_feed_url)
+    print(feed_updates)
+    exit(0)
 
-    # validate the request and craft the message
-    message = validate_component(request.get_json(silent=True))
-
-    if message:
-        return post_to_twitter({"text": message})
-    else:
-        return "Bad Request", 400
+    # post the updates to Twitter
+    for update in feed_updates:
+        message = validate_component(update)
+        if message:
+            post_to_twitter({"text": message})
 
 
 if __name__ == "__main__":
