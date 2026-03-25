@@ -27,6 +27,7 @@ resource "google_service_account" "function_sa" {
 }
 
 resource "google_cloudfunctions2_function_iam_member" "invoker_allusers" {
+  count          = local.cron_enabled ? 0 : 1
   project        = google_cloudfunctions2_function.function.project
   location       = google_cloudfunctions2_function.function.location
   cloud_function = google_cloudfunctions2_function.function.name
@@ -34,15 +35,6 @@ resource "google_cloudfunctions2_function_iam_member" "invoker_allusers" {
   member         = "allUsers"
 }
 
-resource "google_cloud_run_service_iam_binding" "cloud_run_invoker" {
-  project  = google_cloudfunctions2_function.function.project
-  location = google_cloudfunctions2_function.function.location
-  service  = google_cloudfunctions2_function.function.name
-  role     = "roles/run.invoker"
-  members = [
-    "allUsers"
-  ]
-}
 
 resource "google_secret_manager_secret_iam_member" "secret_iam" {
   for_each  = { for s in var.secret_environment_variables : s.key => s }
