@@ -103,7 +103,6 @@ resource "google_cloudfunctions2_function" "function" {
         object = google_storage_bucket_object.zip.name
       }
     }
-    environment_variables = var.environment_variables
   }
 
   service_config {
@@ -121,9 +120,10 @@ resource "google_cloudfunctions2_function" "function" {
         project_id = local.project
       }
     }
-    environment_variables = {
-      LOG_EXECUTION_ID = "true"
-    }
+    environment_variables = merge(
+      { LOG_EXECUTION_ID = "true" },
+      var.environment_variables != null ? var.environment_variables : {},
+    )
   }
 
   depends_on = [
