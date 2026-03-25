@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import feedparser
 from requests_oauthlib import OAuth1Session
+import json
 import sentry_sdk
 from sentry_sdk.integrations.gcp import GcpIntegration
 
@@ -105,7 +106,6 @@ def fetch_rss_updates(feed_url):
                     "title": entry.get("title", ""),
                     "description": entry.get("summary", ""),
                     "link": entry.get("link", ""),
-                    "published": entry_time,
                 }
             )
 
@@ -119,8 +119,6 @@ def main(request):
 
     # fetch the latest RSS updates
     feed_updates = fetch_rss_updates(rss_feed_url)
-    print(feed_updates)
-    exit(0)
 
     # post the updates to Twitter
     for update in feed_updates:
@@ -130,4 +128,4 @@ def main(request):
 
 
 if __name__ == "__main__":
-    main()
+    main(None)
