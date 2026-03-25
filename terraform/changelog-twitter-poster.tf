@@ -6,6 +6,7 @@ module "changelog-twitter-poster" {
   execution_timeout   = 120
   available_memory_mb = "128Mi"
   schedule            = "0 * * * *" # fetch new rss every hour
+  owner               = "jeffrey.hung@sentry.com"
 
   environment_variables = {
     RSS_FEED_URL = "https://sentry.io/changelog/feed.xml"
@@ -31,11 +32,6 @@ module "changelog-twitter-poster" {
     {
       key     = "sentrychangelog_twitter_access_token_secret"
       secret  = google_secret_manager_secret.secret["sentrychangelog_twitter_access_token_secret"].secret_id
-      version = "latest"
-    },
-    {
-      key     = "sentrychangelog_webhook_auth_header"
-      secret  = google_secret_manager_secret.secret["sentrychangelog_webhook_auth_header"].secret_id
       version = "latest"
     },
   ]
