@@ -99,7 +99,7 @@ variable "secret_environment_variables" {
 variable "ingress_settings" {
   description = "Available ingress settings. ALLOW_ALL, ALLOW_INTERNAL_ONLY, ALLOW_INTERNAL_AND_GCLB."
   type        = string
-  default     = "ALLOW_ALL"
+  default     = "ALLOW_INTERNAL_ONLY"
 }
 
 variable "files_to_exclude" {
