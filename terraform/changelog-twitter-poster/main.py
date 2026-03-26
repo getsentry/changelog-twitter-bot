@@ -86,8 +86,7 @@ def fetch_rss_updates(feed_url):
     feed = feedparser.parse(response.content)
 
     if feed.bozo:
-        logging.error("RSS fetch failed for %s: %s", feed_url, feed.bozo_exception)
-        return []
+        logging.warning("RSS parse warning for %s: %s", feed_url, feed.bozo_exception)
 
     one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
     recent_entries = []
