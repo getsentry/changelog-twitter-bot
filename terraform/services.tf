@@ -15,6 +15,10 @@ resource "google_project_service" "cloudfunctions_googleapis_com" {
   service = "cloudfunctions.googleapis.com"
 }
 
+resource "google_project_service" "cloudscheduler_googleapis_com" {
+  service = "cloudscheduler.googleapis.com"
+}
+
 resource "google_project_service" "cloudresourcemanager_googleapis_com" {
   service = "cloudresourcemanager.googleapis.com"
 }
