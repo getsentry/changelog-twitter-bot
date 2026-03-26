@@ -17,3 +17,7 @@ output "function_trigger_url" {
 output "function_sa_email" {
   value = google_service_account.function_sa.email
 }
+
+output "cronjob_sa_email" {
+  value = local.cron_enabled ? google_service_account.cronjob_sa[0].email : null
+}

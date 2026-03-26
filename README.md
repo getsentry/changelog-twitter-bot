@@ -6,7 +6,7 @@ This is a GCP Cloud Function that listen to [Sentry Changelog](https://sentry.io
 
 This repo defines the infrasturtre and required components for a GCP cloud functions that listens to webhooks and post the data to Twitter. The intention is to update our Changelog Twitter account with updates that are posted to [Sentry Changelog](https://sentry.io/changelog/). 
 
-We utilize Zapier as a RSS feed to webhook middleman, we have a simple Zapier app that subscribes to the [Changelog Feed](https://sentry.io/changelog/feed.xml) and send the feed data to the Cloud Function webhook, once the cloud function valid the request, it will then post the data to the Twitter account.
+We use cron job that runs every hour to check for new entries in our [Changelog Feed](https://sentry.io/changelog/feed.xml), and post them to twitter if new updates are posted.
 
 # Setup
 
