@@ -128,15 +128,24 @@ def main(request):
         resource_owner_secret=sentrychangelog_twitter_access_token_secret,
     )
 
-    # post the updates to Twitter
     posted = 0
+    errors = 0
     for update in feed_updates:
         message = validate_component(update)
-        if message:
+        if not message:
+            continue
+        try:
             post_to_twitter(oauth, {"text": message})
             posted += 1
+        except Exception:
+            errors += 1
+            logging.exception("Failed to post tweet for: %s", update.get("title", ""))
+            sentry_sdk.capture_exception()
 
-    return f"Posted {posted} tweets", 200
+    summary = f"Posted {posted} tweets, {errors} failed"
+    if errors:
+        logging.warning(summary)
+    return summary, 200
 
 
 if __name__ == "__main__":
