@@ -50,9 +50,13 @@ def validate_component(request_json):
         logging.error("Component Validation: incorrect formatted webhook json")
         return False
 
-    title = request_json["title"]
-    description = request_json["description"]
-    link = request_json["link"]
+    title = request_json["title"].strip()
+    description = request_json["description"].strip()
+    link = request_json["link"].strip()
+
+    if not title or not link:
+        logging.error("Component Validation: title or link is empty")
+        return False
 
     full_message = f"{title}{SEPARATOR}{description} {link}"
     if len(full_message) <= TWEET_MAX_LENGTH:
