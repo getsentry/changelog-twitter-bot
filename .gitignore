@@ -50,3 +50,9 @@ terraform.rc
 
 # Ignore mac system files
 **/.DS_Store
+
+# Python test artifacts
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/

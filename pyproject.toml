@@ -1,0 +1,6 @@
+# Test configuration only; the Cloud Function itself is deployed from
+# terraform/changelog-twitter-poster and installs requirements.txt.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["terraform/changelog-twitter-poster"]
+addopts = "-ra"

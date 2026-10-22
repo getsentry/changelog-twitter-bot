@@ -1,0 +1,6 @@
+# Test-only dependencies. Install the function's pinned runtime deps first:
+#   pip install -r terraform/changelog-twitter-poster/requirements.txt
+#   pip install -r requirements-dev.txt
+# Kept separate because requirements.txt is hash-pinned and pip refuses to
+# mix hashed and unhashed requirements in one install.
+pytest==9.1.1
