@@ -2,9 +2,9 @@
 # Edit this file, then regenerate requirements.txt:
 #   pip-compile --generate-hashes requirements.in
 # Cloud Functions installs requirements.txt only.
-feedparser==6.0.11
+feedparser==6.0.14
 functions-framework==3.10.2
 oauthlib==4.0.0
-requests==2.33.0
+requests==2.34.2
 requests-oauthlib==2.0.0
-sentry-sdk==2.18.0
+sentry-sdk==2.72.0
