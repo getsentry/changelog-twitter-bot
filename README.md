@@ -1,17 +1,17 @@
 # changelog-twitter-bot
  
-This is a GCP Cloud Function that listen to [Sentry Changelog](https://sentry.io/changelog/) and post the update on the [Sentry Changelog Twitter Account](https://x.com/SentryChangelog)
+This is a GCP Cloud Function that listens to [Sentry Changelog](https://sentry.io/changelog/) and posts the update on the [Sentry Changelog Twitter Account](https://x.com/SentryChangelog)
 
 # How it works
 
-This repo defines the infrasturtre and required components for a GCP cloud functions that listens to webhooks and post the data to Twitter. The intention is to update our Changelog Twitter account with updates that are posted to [Sentry Changelog](https://sentry.io/changelog/). 
+This repo defines the infrastructure and required components for a GCP cloud function that listens to webhooks and posts the data to Twitter. The intention is to update our Changelog Twitter account with updates that are posted to [Sentry Changelog](https://sentry.io/changelog/). 
 
 We use cron job that runs every hour to check for new entries in our [Changelog Feed](https://sentry.io/changelog/feed.xml), and post them to twitter if new updates are posted.
 
 # Setup
 
 ## GCP
-The infrasturce lives in the `changelog-twitter-poster` GCP project, you can deploy the infrasturce using terraform.
+The infrastructure lives in the `changelog-twitter-poster` GCP project, you can deploy the infrastructure using terraform.
 
 ```
 cd terraform
@@ -33,7 +33,7 @@ The twitter ones can be retrieved in the Twitter section below.
 
 ## Twitter
 
-> Free version of Twitter API access is sufficiant for this integration.
+> Free version of Twitter API access is sufficient for this integration.
 
 You can visit [Twitter Developer Portal](https://developer.twitter.com/en/portal/projects-and-apps) to create a Free App for your Twitter account.
 
@@ -45,7 +45,7 @@ Update the `App permissions` to `Read and write`, select `Web App, Automated App
 
 For the App info, you can enter any URI for the required field, as we won't need them in the future. Don't forget to click save when you are done.
 
-Next, go to the `Keys and tokens` tab, can create the Key/Secret pair for both `Consumer Keys` and `Acess Token and Secret`.
+Next, go to the `Keys and tokens` tab, can create the Key/Secret pair for both `Consumer Keys` and `Access Token and Secret`.
 ![Keys and Tokens](img/Twitter_keys_and_tokens.png)
 
 These are the keys that need to be added to the GCP secret manager, please handle them securely as anyone who has access to these keys will have access to your Twitter account.
