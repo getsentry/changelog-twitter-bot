@@ -38,7 +38,7 @@ Prerequisites, all outside this repo:
 
 The plan job runs only for pull requests from branches in this repository, not from forks or Dependabot (GitHub withholds the OIDC token from those anyway; the guard makes them skip rather than fail). Anyone who can open a same-repo PR can run Terraform data sources as the plan SA during plan, which is why that account is read-only with no secret-payload access.
 
-The apply SA deliberately cannot change its own roles, the plan SA's roles, or the plan SA's custom role. A pull request that edits `terraform/deployer.tf` or `terraform/planner.tf` will plan fine but the CI apply will fail on those resources; apply it once locally as yourself (`terraform apply` with your user credentials), after which the CI apply is a no-op.
+The apply SA deliberately cannot change its own roles, the plan SA's roles, or the plan SA's custom role (it can only read them). A pull request that edits `terraform/deployer.tf` or `terraform/planner.tf` will plan fine but the CI apply will fail on those resources; apply it once locally as yourself (`terraform apply` with your user credentials), after which the CI apply is a no-op.
 Once the infra is deployed, you will need to update the following secrets in GCP Secret Manager.
 ```
 sentrychangelog_twitter_consumer_key

@@ -27,6 +27,7 @@ locals {
     "roles/cloudscheduler.admin",           # google_cloud_scheduler_job
     "roles/secretmanager.admin",            # google_secret_manager_secret + its IAM bindings
     "roles/iam.serviceAccountAdmin",        # google_service_account + google_service_account_iam_member
+    "roles/iam.roleViewer",                 # refresh google_project_iam_custom_role (create/update stay human-applied)
     "roles/serviceusage.serviceUsageAdmin", # google_project_service
   ]
 
