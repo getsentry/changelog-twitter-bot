@@ -1,8 +1,7 @@
 # Local .terraform directories
 **/.terraform/*
 
-# Terraform lock file
-terraform/.terraform.lock.hcl
+# Commit terraform/.terraform.lock.hcl: it pins provider versions and checksums.
 **.tfstate.lock.info
 
 # plan files
@@ -29,6 +28,8 @@ crash.*.log
 # to change depending on the environment.
 *.tfvars
 *.tfvars.json
+# This one holds only service account emails and is read by CI.
+!terraform/terraform.tfvars
 
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in

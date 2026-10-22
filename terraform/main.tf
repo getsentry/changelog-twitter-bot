@@ -1,12 +1,12 @@
 terraform {
+  backend "gcs" {
+    bucket = "sac-prod-tf--changelog-x"
+  }
+
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.23.0"
-    }
-
-    google-beta = {
-      source = "hashicorp/google-beta"
+      version = "~> 5.23"
     }
   }
 }
@@ -29,7 +29,12 @@ locals {
 resource "google_storage_bucket" "staging_bucket" {
   name          = "${local.project}-cloud-function-staging"
   location      = "US"
-  force_destroy = true
+  force_destroy = false
 
-  public_access_prevention = "enforced"
+  public_access_prevention    = "enforced"
+  uniform_bucket_level_access = false
+
+  versioning {
+    enabled = true
+  }
 }
