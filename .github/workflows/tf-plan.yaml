@@ -9,13 +9,15 @@ jobs:
   build:
     name: tf plan
     runs-on: ubuntu-latest
-    # Only same-repo, human-authored PRs get GCP credentials. GitHub already
-    # withholds the OIDC token from fork and Dependabot PRs, so without this
-    # guard those runs fail at auth instead of skipping; the guard also keeps
-    # the intent explicit if the trigger is ever changed to pull_request_target.
-    if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.actor != 'dependabot[bot]'
+    # Only same-repo PRs get GCP credentials. GitHub withholds the OIDC token
+    # from fork PRs, so without this guard those runs fail at auth instead of
+    # skipping; the guard also keeps the intent explicit if the trigger is ever
+    # changed to pull_request_target. Dependabot PRs are included on purpose:
+    # they bump the function's requirements, the provider lock file and the
+    # workflow actions, all of which change the plan. Dependabot runs get no
+    # Actions secrets, but this job only needs `vars.*`, GITHUB_TOKEN and the
+    # OIDC token, which the permissions block below grants.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
       id-token: write
