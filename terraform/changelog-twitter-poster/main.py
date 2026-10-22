@@ -4,11 +4,21 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 import feedparser
+from requests.adapters import HTTPAdapter
 from requests_oauthlib import OAuth1Session
+from urllib3.util.retry import Retry
 import sentry_sdk
 from sentry_sdk.integrations.gcp import GcpIntegration
 
 HTTP_TIMEOUT_SECONDS = 10
+
+# Each run only looks at the past hour, so a failed fetch drops that hour's
+# entries. Retry transient failures, including the intermittent 403s returned
+# by sentry.io's edge. The worst case is about 52s, below the 120s timeout.
+RSS_FETCH_RETRIES = 3
+RSS_FETCH_BACKOFF_FACTOR = 2
+RSS_FETCH_RETRY_STATUSES = (403, 429, 500, 502, 503, 504)
+USER_AGENT = "sentry-changelog-twitter-bot (+https://github.com/getsentry/changelog-twitter-bot)"
 
 REQUIRED_ENV_VARS = [
     "sentrychangelog_twitter_consumer_key",
@@ -83,9 +93,28 @@ def post_to_twitter(oauth, payload):
         raise RuntimeError(error_msg)
 
 
+def build_rss_session():
+    retry = Retry(
+        total=RSS_FETCH_RETRIES,
+        backoff_factor=RSS_FETCH_BACKOFF_FACTOR,
+        status_forcelist=RSS_FETCH_RETRY_STATUSES,
+        allowed_methods=frozenset(["GET"]),
+        # Keep the worst case bounded by the function timeout.
+        respect_retry_after_header=False,
+        raise_on_status=False,
+    )
+    session = requests.Session()
+    session.mount("https://", HTTPAdapter(max_retries=retry))
+    session.mount("http://", HTTPAdapter(max_retries=retry))
+    session.headers["User-Agent"] = USER_AGENT
+    return session
+
+
 def fetch_rss_updates(feed_url):
     """Fetch an RSS feed and return entries published within the past hour."""
-    response = requests.get(feed_url, timeout=HTTP_TIMEOUT_SECONDS)
+    with build_rss_session() as session:
+        response = session.get(feed_url, timeout=HTTP_TIMEOUT_SECONDS)
+    # Persistent failures should still raise so Sentry alerts on them.
     response.raise_for_status()
     feed = feedparser.parse(response.content)
 
