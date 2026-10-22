@@ -36,6 +36,8 @@ Prerequisites, all outside this repo:
 - Repository variables `WIF_PROVIDER`, `WIF_PLAN_SERVICE_ACCOUNT` and `WIF_APPLY_SERVICE_ACCOUNT`, and a `production` environment (add required reviewers there if applies should wait for approval).
 - In `security-as-code`: both service accounts, the Workload Identity provider trusting this repository, and their access to the state bucket `sac-prod-tf--changelog-x` (plan: object read; apply: object admin).
 
+The plan job runs only for pull requests from branches in this repository, not from forks or Dependabot (GitHub withholds the OIDC token from those anyway; the guard makes them skip rather than fail). Anyone who can open a same-repo PR can run Terraform data sources as the plan SA during plan, which is why that account is read-only with no secret-payload access.
+
 The apply SA deliberately cannot change its own roles, the plan SA's roles, or the plan SA's custom role. A pull request that edits `terraform/deployer.tf` or `terraform/planner.tf` will plan fine but the CI apply will fail on those resources; apply it once locally as yourself (`terraform apply` with your user credentials), after which the CI apply is a no-op.
 Once the infra is deployed, you will need to update the following secrets in GCP Secret Manager.
 ```

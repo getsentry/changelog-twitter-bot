@@ -9,6 +9,13 @@ jobs:
   build:
     name: tf plan
     runs-on: ubuntu-latest
+    # Only same-repo, human-authored PRs get GCP credentials. GitHub already
+    # withholds the OIDC token from fork and Dependabot PRs, so without this
+    # guard those runs fail at auth instead of skipping; the guard also keeps
+    # the intent explicit if the trigger is ever changed to pull_request_target.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
     permissions:
       contents: read
       id-token: write
