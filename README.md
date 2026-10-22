@@ -28,6 +28,7 @@ Terraform runs in GitHub Actions via Workload Identity Federation (no service ac
 
 | Workflow | Trigger | Identity | What it does |
 |---|---|---|---|
+| [`tests.yaml`](.github/workflows/tests.yaml) | Pull request, push to `main` | none | Runs the Python unit tests in `tests/` against the function's pinned dependencies on Python 3.11 |
 | [`tf-plan.yaml`](.github/workflows/tf-plan.yaml) | Pull request to `main` | Plan SA (`changelog-x-tf-plan`, read-only, `terraform/planner.tf`) | `terraform plan`, posts the diff as a PR comment when there are changes |
 | [`tf-apply.yaml`](.github/workflows/tf-apply.yaml) | Push to `main` | Apply SA (`changelog-x-tf-apply`, write, `terraform/deployer.tf`) | `terraform apply -auto-approve` in the `production` environment; applies are serialized |
 
@@ -50,6 +51,19 @@ sentrychangelog_webhook_auth_header
 The twitter ones can be retrieved in the Twitter section below.
 
 `sentrychangelog_webhook_auth_header` is a preshared secret that's setup in Zapier's webhook as a `Authorization` header to authorize the webhooks requests.
+
+## Tests
+
+The function's logic in `terraform/changelog-twitter-poster/main.py` has unit tests in `tests/`. They don't touch the network: feed fetching and the Twitter API are mocked, and the credentials `main.py` requires at import time are stubbed in `tests/conftest.py`. The same suite runs in CI on every pull request.
+
+```
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r terraform/changelog-twitter-poster/requirements.txt
+pip install -r requirements-dev.txt
+pytest
+```
+
+Tests live outside the function directory on purpose: Terraform zips `terraform/changelog-twitter-poster` wholesale, so anything placed there would be shipped with the function and change its source hash.
 
 ## Twitter
 
