@@ -1,0 +1,10 @@
+# Direct dependencies for the Cloud Function.
+# Edit this file, then regenerate requirements.txt:
+#   pip-compile --generate-hashes requirements.in
+# Cloud Functions installs requirements.txt only.
+feedparser==6.0.11
+functions-framework==3.10.2
+oauthlib==3.2.2
+requests==2.33.0
+requests-oauthlib==2.0.0
+sentry-sdk==2.18.0
