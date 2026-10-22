@@ -47,6 +47,20 @@ def test_import_succeeds_with_all_variables_set():
     assert result.returncode == 0, result.stderr
 
 
+def test_running_the_suite_leaves_no_bytecode_in_the_function_directory():
+    # Terraform's archive_file zips the function directory as-is, so a
+    # __pycache__ left behind by the tests would change the deployed source
+    # hash. Both the in-process import of main and the subprocess imports
+    # above must leave the directory untouched.
+    import_main_with_env(dict(os.environ))
+
+    stray = FUNCTION_DIR / "__pycache__"
+    assert not stray.exists(), (
+        f"{stray} exists; delete it before running terraform, and make sure "
+        "PYTHONDONTWRITEBYTECODE is set for anything that imports main.py"
+    )
+
+
 def test_required_variables_match_the_secrets_wired_in_terraform():
     # The Terraform module injects these exact names as secret env vars, so a
     # rename on either side would only show up as a crash at cold start.
