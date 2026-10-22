@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Cloud Function deps. Dependabot updates requirements.in and regenerates
+  # the pinned, hashed requirements.txt with pip-compile.
+  - package-ecosystem: pip
+    directory: /terraform/changelog-twitter-poster
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
