@@ -26,13 +26,24 @@ resource "google_service_account" "function_sa" {
   display_name = "Cloud Function Service Account for ${var.name}"
 }
 
+# Gen2 functions are Cloud Run services underneath; run.invoker is what gates
+# HTTP invocation, cloudfunctions.invoker alone does not open the endpoint.
 resource "google_cloudfunctions2_function_iam_member" "invoker_allusers" {
-  count          = local.cron_enabled ? 0 : 1
+  count          = var.allow_unauthenticated ? 1 : 0
   project        = google_cloudfunctions2_function.function.project
   location       = google_cloudfunctions2_function.function.location
   cloud_function = google_cloudfunctions2_function.function.name
   role           = "roles/cloudfunctions.invoker"
   member         = "allUsers"
+}
+
+resource "google_cloud_run_service_iam_member" "invoker_allusers" {
+  count    = var.allow_unauthenticated ? 1 : 0
+  project  = google_cloudfunctions2_function.function.project
+  location = google_cloudfunctions2_function.function.location
+  service  = google_cloudfunctions2_function.function.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
 }
 
 
@@ -43,13 +54,8 @@ resource "google_secret_manager_secret_iam_member" "secret_iam" {
   member    = "serviceAccount:${google_service_account.function_sa.email}"
 }
 
-resource "google_service_account_iam_member" "function_sa_actas_iam" {
-  service_account_id = google_service_account.function_sa.name
-  role               = "roles/iam.serviceAccountUser"
-  member             = "serviceAccount:${google_service_account.function_sa.email}"
-}
-
 resource "google_service_account_iam_member" "deploy_sa_actas_iam" {
+  count              = var.deploy_sa_email != null ? 1 : 0
   service_account_id = google_service_account.function_sa.name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${var.deploy_sa_email}"
@@ -59,6 +65,48 @@ resource "google_project_iam_member" "function_sa_logwriter_iam" {
   project = local.project
   role    = "roles/logging.logWriter"
   member  = "serviceAccount:${google_service_account.function_sa.email}"
+}
+
+# Gen2 builds run on Cloud Build as a build service account. Left unset, that
+# is the Compute Engine default SA, which usually carries project Editor, and
+# whoever deploys needs actAs on it. A dedicated build SA with only what a
+# function build needs keeps that path narrow.
+resource "google_service_account" "build_sa" {
+  account_id   = "cb-${var.name}"
+  display_name = "Cloud Build Service Account for ${var.name}"
+}
+
+resource "google_project_iam_member" "build_sa_logwriter_iam" {
+  project = local.project
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.build_sa.email}"
+}
+
+resource "google_project_iam_member" "build_sa_artifactregistry_iam" {
+  project = local.project
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.build_sa.email}"
+}
+
+# Cloud Functions copies the uploaded source into this Google-managed bucket
+# and the build reads it from there, not from our staging bucket. The bucket
+# is created by the service on the first deploy in a region, so in a brand-new
+# project this binding needs a second apply.
+locals {
+  gcf_sources_bucket = "gcf-v2-sources-${local.project_num}-${var.location}"
+}
+
+resource "google_storage_bucket_iam_member" "build_sa_source_reader" {
+  bucket = local.gcf_sources_bucket
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.build_sa.email}"
+}
+
+resource "google_service_account_iam_member" "deploy_sa_build_actas_iam" {
+  count              = var.deploy_sa_email != null ? 1 : 0
+  service_account_id = google_service_account.build_sa.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${var.deploy_sa_email}"
 }
 
 data "archive_file" "source" {
@@ -89,6 +137,7 @@ resource "google_cloudfunctions2_function" "function" {
     runtime           = var.runtime
     entry_point       = var.function_entrypoint
     docker_repository = "projects/${local.project}/locations/${var.location}/repositories/gcf-artifacts"
+    service_account   = google_service_account.build_sa.name
     source {
       storage_source {
         bucket = "${local.project}-cloud-function-staging"
@@ -98,10 +147,12 @@ resource "google_cloudfunctions2_function" "function" {
   }
 
   service_config {
-    timeout_seconds       = var.execution_timeout
-    available_memory      = var.available_memory_mb
-    service_account_email = google_service_account.function_sa.email
-    ingress_settings      = var.ingress_settings
+    timeout_seconds                  = var.execution_timeout
+    available_memory                 = var.available_memory_mb
+    max_instance_count               = var.max_instance_count
+    max_instance_request_concurrency = var.max_instance_request_concurrency
+    service_account_email            = google_service_account.function_sa.email
+    ingress_settings                 = var.ingress_settings
     dynamic "secret_environment_variables" {
       for_each = var.secret_environment_variables
       iterator = item
@@ -119,8 +170,11 @@ resource "google_cloudfunctions2_function" "function" {
   }
 
   depends_on = [
-    google_service_account_iam_member.function_sa_actas_iam,
     google_service_account_iam_member.deploy_sa_actas_iam,
+    google_service_account_iam_member.deploy_sa_build_actas_iam,
+    google_project_iam_member.build_sa_logwriter_iam,
+    google_project_iam_member.build_sa_artifactregistry_iam,
+    google_storage_bucket_iam_member.build_sa_source_reader,
     data.archive_file.source
   ]
 }
@@ -137,7 +191,7 @@ resource "google_service_account" "cronjob_sa" {
 }
 
 resource "google_service_account_iam_member" "cj_deploy_sa_actas_iam" {
-  count              = local.cron_enabled ? 1 : 0
+  count              = local.cron_enabled && var.deploy_sa_email != null ? 1 : 0
   service_account_id = google_service_account.cronjob_sa[0].name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${var.deploy_sa_email}"

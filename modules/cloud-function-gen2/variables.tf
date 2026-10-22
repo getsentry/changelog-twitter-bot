@@ -74,9 +74,26 @@ variable "temp_zip_output_dir" {
 
 variable "deploy_sa_email" {
   type        = string
-  description = "Service account used for CD in GitHub actions"
-  # TODO: Remove hardcoded account once deployment SA moved to terraform
-  default = "gha-cloud-functions-deployment@jeffreyhung-test.iam.gserviceaccount.com"
+  description = "Optional CD service account granted iam.serviceAccountUser on the function and cron service accounts. Leave null when deploying with user credentials."
+  default     = null
+}
+
+variable "allow_unauthenticated" {
+  type        = bool
+  description = "Grant allUsers permission to invoke the function over HTTP. Keep false unless the function is meant to be a public endpoint."
+  default     = false
+}
+
+variable "max_instance_count" {
+  type        = number
+  description = "Maximum number of function instances. 1 prevents overlapping executions."
+  default     = 1
+}
+
+variable "max_instance_request_concurrency" {
+  type        = number
+  description = "Maximum concurrent requests per instance. Values above 1 require at least 1 vCPU."
+  default     = 1
 }
 
 variable "environment_variables" {

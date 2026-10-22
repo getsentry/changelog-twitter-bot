@@ -11,3 +11,13 @@ updates:
         update-types:
           - minor
           - patch
+  # Workflow actions are pinned to commit SHAs; Dependabot bumps the SHA and
+  # the trailing version comment together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /terraform
+    schedule:
+      interval: weekly

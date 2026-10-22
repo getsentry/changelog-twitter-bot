@@ -1,0 +1,43 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches:
+      - main
+
+# Serialize applies so two quick merges to main don't run overlapping
+# terraform apply runs against the same GCS state lock.
+concurrency:
+  group: terraform-apply
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: tf apply
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v 6.0.2
+
+      - name: gcp auth (tf apply)
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_APPLY_SERVICE_ACCOUNT }}
+
+      - name: terraform apply
+        id: terraform-apply
+        uses: dflook/terraform-apply@5489b988934a50bf1489d5b7c5253b46520a7dca  # v2.2.3
+        if:
+          ${{ steps.auth.outcome == 'success'}}
+        with:
+          auto_approve: true
+          path: terraform
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

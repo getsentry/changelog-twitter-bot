@@ -7,6 +7,7 @@ module "changelog-twitter-poster" {
   available_memory_mb = "128Mi"
   schedule            = "0 * * * *" # fetch new rss every hour
   owner               = "jeffrey.hung@sentry.com"
+  deploy_sa_email     = local.deploy_sa_email
 
   environment_variables = {
     RSS_FEED_URL = "https://sentry.io/changelog/feed.xml"

@@ -11,7 +11,7 @@ We use cron job that runs every hour to check for new entries in our [Changelog 
 # Setup
 
 ## GCP
-The infrastructure lives in the `changelog-twitter-poster` GCP project, you can deploy the infrastructure using terraform.
+The infrastructure lives in the `changelog-twitter-poster` GCP project, you can deploy the infrastructure using terraform. Terraform state is stored in the `sac-prod-tf--changelog-x` GCS bucket, and deployments run as `changelog-x-tf-apply@sac-prod-sa.iam.gserviceaccount.com`. That account's permissions inside this project are defined in `terraform/deployer.tf`; its access to the state bucket is managed in the `sac-prod` project.
 
 ```
 cd terraform
@@ -19,6 +19,24 @@ terraform init
 terraform plan
 terraform apply
 ```
+
+If you previously applied with local state, `terraform init` will offer to migrate it into the GCS backend; answer yes, then commit the generated `.terraform.lock.hcl`.
+
+### CI/CD
+
+Terraform runs in GitHub Actions via Workload Identity Federation (no service account keys), using two service accounts from the `sac-prod-sa` project. The emails live in `terraform/terraform.tfvars`.
+
+| Workflow | Trigger | Identity | What it does |
+|---|---|---|---|
+| [`tf-plan.yaml`](.github/workflows/tf-plan.yaml) | Pull request to `main` | Plan SA (`changelog-x-tf-plan`, read-only, `terraform/planner.tf`) | `terraform plan`, posts the diff as a PR comment when there are changes |
+| [`tf-apply.yaml`](.github/workflows/tf-apply.yaml) | Push to `main` | Apply SA (`changelog-x-tf-apply`, write, `terraform/deployer.tf`) | `terraform apply -auto-approve` in the `production` environment; applies are serialized |
+
+Prerequisites, all outside this repo:
+
+- Repository variables `WIF_PROVIDER`, `WIF_PLAN_SERVICE_ACCOUNT` and `WIF_APPLY_SERVICE_ACCOUNT`, and a `production` environment (add required reviewers there if applies should wait for approval).
+- In `security-as-code`: both service accounts, the Workload Identity provider trusting this repository, and their access to the state bucket `sac-prod-tf--changelog-x` (plan: object read; apply: object admin).
+
+The apply SA deliberately cannot change its own roles, the plan SA's roles, or the plan SA's custom role. A pull request that edits `terraform/deployer.tf` or `terraform/planner.tf` will plan fine but the CI apply will fail on those resources; apply it once locally as yourself (`terraform apply` with your user credentials), after which the CI apply is a no-op.
 Once the infra is deployed, you will need to update the following secrets in GCP Secret Manager.
 ```
 sentrychangelog_twitter_consumer_key
