@@ -19,6 +19,11 @@ RSS_FETCH_RETRIES = 3
 RSS_FETCH_BACKOFF_FACTOR = 2
 RSS_FETCH_RETRY_STATUSES = (403, 429, 500, 502, 503, 504)
 USER_AGENT = "sentry-changelog-twitter-bot (+https://github.com/getsentry/changelog-twitter-bot)"
+# The sentry.io edge caches feed.xml for up to about an hour, ignoring the
+# origin's max-age=0 and request no-cache headers. A copy that stale hides
+# entries until they fall outside the one-hour window above. The edge cache key
+# includes the query string, so a per-run value always reaches the origin.
+CACHE_BUST_PARAM = "_"
 
 REQUIRED_ENV_VARS = [
     "sentrychangelog_twitter_consumer_key",
@@ -113,7 +118,11 @@ def build_rss_session():
 def fetch_rss_updates(feed_url):
     """Fetch an RSS feed and return entries published within the past hour."""
     with build_rss_session() as session:
-        response = session.get(feed_url, timeout=HTTP_TIMEOUT_SECONDS)
+        response = session.get(
+            feed_url,
+            params={CACHE_BUST_PARAM: int(datetime.now(timezone.utc).timestamp())},
+            timeout=HTTP_TIMEOUT_SECONDS,
+        )
     # Persistent failures should still raise so Sentry alerts on them.
     response.raise_for_status()
     feed = feedparser.parse(response.content)
