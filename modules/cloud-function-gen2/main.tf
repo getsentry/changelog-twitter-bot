@@ -138,6 +138,9 @@ resource "google_cloudfunctions2_function" "function" {
     entry_point       = var.function_entrypoint
     docker_repository = "projects/${local.project}/locations/${var.location}/repositories/gcf-artifacts"
     service_account   = google_service_account.build_sa.name
+    # Rebuild on Google's patched runtime base image whenever security
+    # updates are published, instead of only on our next source change.
+    automatic_update_policy {}
     source {
       storage_source {
         bucket = "${local.project}-cloud-function-staging"
