@@ -233,12 +233,16 @@ def test_empty_feed_returns_no_updates(frozen_now, rss_session):
     assert main.fetch_rss_updates(FEED_URL) == []
 
 
-def test_fetches_feed_url_with_timeout(frozen_now, rss_session):
+def test_fetches_feed_url_with_timeout_and_cache_buster(frozen_now, rss_session):
     rss_session.get.return_value = http_response(rss_feed([]))
 
     main.fetch_rss_updates(FEED_URL)
 
-    rss_session.get.assert_called_once_with(FEED_URL, timeout=main.HTTP_TIMEOUT_SECONDS)
+    rss_session.get.assert_called_once_with(
+        FEED_URL,
+        params={main.CACHE_BUST_PARAM: int(frozen_now.timestamp())},
+        timeout=main.HTTP_TIMEOUT_SECONDS,
+    )
     rss_session.__exit__.assert_called_once()
 
 
