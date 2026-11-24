@@ -9,6 +9,7 @@ from requests_oauthlib import OAuth1Session
 from urllib3.util.retry import Retry
 import sentry_sdk
 from sentry_sdk.integrations.gcp import GcpIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 HTTP_TIMEOUT_SECONDS = 10
 
@@ -37,14 +38,33 @@ for _var in REQUIRED_ENV_VARS:
     if not os.environ.get(_var):
         raise EnvironmentError(f"Missing required environment variable: {_var}")
 
+_PII_DENYLIST_TERMS = ["forwarded", "-ip", "remote-", "via", "-user"]
+
 sentry_sdk.init(
     dsn=os.environ.get("SENTRY_DSN"),
     integrations=[
         GcpIntegration(timeout_warning=True),
+        LoggingIntegration(level=None, event_level=logging.ERROR),
     ],
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for tracing.
     traces_sample_rate=1.0,
+    attach_stacktrace=False,
+    # SDK 3.x collects more by default than 2.x without `send_default_pii`.
+    # Keep request bodies, which 2.x also sent, and opt out of the rest.
+    data_collection={
+        "user_info": False,
+        "http_bodies": ["incoming_request"],
+        "graphql": {"document": False, "variables": False},
+        "gen_ai": {"inputs": False, "outputs": False},
+        "mcp": {"inputs": False, "outputs": False},
+        "database_query_data": False,
+        "queues": False,
+        "http_headers": {"request": {"mode": "denylist", "terms": _PII_DENYLIST_TERMS}},
+        "cookies": {"mode": "denylist", "terms": _PII_DENYLIST_TERMS},
+        "url_query_params": {"mode": "denylist", "terms": _PII_DENYLIST_TERMS},
+        "stack_frame_variables": {"mode": "denylist"},
+    },
 )
 
 sentrychangelog_twitter_consumer_key = os.environ["sentrychangelog_twitter_consumer_key"]
